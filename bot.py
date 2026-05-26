@@ -1,8 +1,22 @@
 import requests
 import time
+import random
 
 BOT_TOKEN = "8901013849:AAGXWFh0HnYJgvryPa3kZLRH4uvg9sCmlHQ"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+
+GRAPJES = [
+    "Waarom vertrouwen beleggers nooit op atomen?\n\nOmdat ze alles verzinnen! 😂",
+    "Hoe noem je een Bitcoin die slecht slaapt?\n\nEen crypto-nacht! 😴",
+    "Waarom ging de crypto-investeerder naar de dokter?\n\nZijn portfolio was in de dip! 📉😂",
+    "Wat zegt een rijke Bitcoin tegen een arme altcoin?\n\n'Sorry, ik heb geen kleingeld!' 🤣",
+    "Waarom zijn crypto-traders zulke goede musici?\n\nZe kennen alle highs en lows! 🎵📈",
+    "Hoe noem je iemand die al zijn geld in Dogecoin stopt?\n\nEen optimist! 🐕😂",
+    "Wat is het verschil tussen een pizza en een crypto-trader?\n\nEen pizza kan een gezin onderhouden! 🍕😅",
+    "Waarom deed de Bitcoin-miner mee aan de marathon?\n\nHij wilde de block chain breken! 🏃😂",
+    "Wat zei de ene wallet tegen de andere?\n\n'Jij bent leeg, maar ik heb ook niet veel te bieden!' 👛😂",
+    "Hoe noem je een beer in de crypto-wereld?\n\nEen bear market... maar dan eentje die echt bijt! 🐻📉",
+]
 
 CRYPTO_IDS = {
     "BTC": "bitcoin",
@@ -97,6 +111,7 @@ def handle_message(message):
             "/prijs BTC — Live prijs van een coin\n"
             "/market — Overzicht van top coins\n"
             "/coins — Alle beschikbare coins\n"
+            "/grapje — Vertel een grapje 😂\n"
             "/help — Dit menu\n\n"
             "Voorbeeld: `/prijs SOL`"
         )
@@ -107,7 +122,12 @@ def handle_message(message):
             "/prijs BTC — Live prijs van een coin\n"
             "/market — Overzicht van top coins\n"
             "/coins — Alle beschikbare coins\n"
+            "/grapje — Vertel een grapje 😂\n"
         )
+
+    elif text == "/grapje":
+        grapje = random.choice(GRAPJES)
+        send_message(chat_id, f"😂 *Grapje van de dag:*\n\n{grapje}")
 
     elif text == "/coins":
         coins = ", ".join(CRYPTO_IDS.keys())
