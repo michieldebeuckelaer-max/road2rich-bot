@@ -18,6 +18,51 @@ GRAPJES = [
     "Hoe noem je een beer in de crypto-wereld?\n\nEen bear market... maar dan eentje die echt bijt! 🐻📉",
 ]
 
+STOCKS = ["ABCL", "SSLV.L", "TTWO", "CCJ", "CRWV"]
+
+def get_stock_price(symbol):
+    symbol = symbol.upper()
+    if symbol not in STOCKS:
+        return f"❌ Onbekend aandeel: `{symbol}`\nBeschikbaar: {', '.join(STOCKS)}"
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2d"
+        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        data = res.json()
+        meta = data["chart"]["result"][0]["meta"]
+        price = meta.get("regularMarketPrice", 0)
+        prev = meta.get("chartPreviousClose", price)
+        change = ((price - prev) / prev * 100) if prev else 0
+        currency = meta.get("currency", "USD")
+        arrow = "📈" if change >= 0 else "📉"
+        sign = "+" if change >= 0 else ""
+        return (
+            f"{arrow} *{symbol}*\n"
+            f"💰 Prijs: `{currency} {price:,.2f}`\n"
+            f"📊 24h: `{sign}{change:.2f}%`\n"
+            f"🏦 Markt: `{meta.get('exchangeName', '?')}`"
+        )
+    except Exception as e:
+        return f"❌ Fout bij ophalen van {symbol}: {e}"
+
+def get_all_stocks():
+    lines = ["📋 *Aandelen Overzicht*\n"]
+    for symbol in STOCKS:
+        try:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2d"
+            res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+            data = res.json()
+            meta = data["chart"]["result"][0]["meta"]
+            price = meta.get("regularMarketPrice", 0)
+            prev = meta.get("chartPreviousClose", price)
+            change = ((price - prev) / prev * 100) if prev else 0
+            currency = meta.get("currency", "USD")
+            arrow = "🟢" if change >= 0 else "🔴"
+            sign = "+" if change >= 0 else ""
+            lines.append(f"{arrow} *{symbol}* {currency} {price:,.2f} `({sign}{change:.2f}%)`")
+        except:
+            lines.append(f"⚪ *{symbol}* — niet beschikbaar")
+    return "\n".join(lines)
+
 CRYPTO_IDS = {
     "BTC": "bitcoin",
     "ETH": "ethereum",
@@ -108,20 +153,24 @@ def handle_message(message):
         send_message(chat_id,
             "👋 *Welkom bij Road2Rich Bot!*\n\n"
             "📌 *Commands:*\n"
-            "/prijs BTC — Live prijs van een coin\n"
-            "/market — Overzicht van top coins\n"
-            "/coins — Alle beschikbare coins\n"
+            "/prijs BTC — Live crypto prijs\n"
+            "/market — Crypto overzicht\n"
+            "/coins — Beschikbare coins\n"
+            "/aandeel TTWO — Live aandelenkoers\n"
+            "/aandelen — Alle aandelen overzicht\n"
             "/grapje — Vertel een grapje 😂\n"
             "/help — Dit menu\n\n"
-            "Voorbeeld: `/prijs SOL`"
+            "Voorbeeld: `/aandeel CRWV`"
         )
 
     elif text == "/help":
         send_message(chat_id,
             "📌 *Commands:*\n"
-            "/prijs BTC — Live prijs van een coin\n"
-            "/market — Overzicht van top coins\n"
-            "/coins — Alle beschikbare coins\n"
+            "/prijs BTC — Live crypto prijs\n"
+            "/market — Crypto overzicht\n"
+            "/coins — Beschikbare coins\n"
+            "/aandeel TTWO — Live aandelenkoers\n"
+            "/aandelen — Alle aandelen overzicht\n"
             "/grapje — Vertel een grapje 😂\n"
         )
 
@@ -136,6 +185,19 @@ def handle_message(message):
     elif text == "/market":
         reply = get_portfolio(list(CRYPTO_IDS.keys()))
         send_message(chat_id, reply)
+
+    elif text == "/aandelen":
+        reply = get_all_stocks()
+        send_message(chat_id, reply)
+
+    elif text.startswith("/aandeel"):
+        parts = text.split()
+        if len(parts) < 2:
+            send_message(chat_id, "❌ Gebruik: `/aandeel TTWO`")
+        else:
+            symbol = parts[1].upper()
+            reply = get_stock_price(symbol)
+            send_message(chat_id, reply)
 
     elif text.startswith("/prijs"):
         parts = text.split()
