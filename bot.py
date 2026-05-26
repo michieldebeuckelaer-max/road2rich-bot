@@ -1,6 +1,12 @@
 import requests
 import time
 import random
+import io
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import datetime
 
 BOT_TOKEN = "8901013849:AAGXWFh0HnYJgvryPa3kZLRH4uvg9sCmlHQ"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
@@ -83,6 +89,59 @@ def send_message(chat_id, text, parse_mode="Markdown"):
         "parse_mode": parse_mode,
     })
 
+def send_photo(chat_id, image_bytes, caption=""):
+    requests.post(f"{API_URL}/sendPhoto", files={
+        "photo": ("chart.png", image_bytes, "image/png"),
+    }, data={"chat_id": chat_id, "caption": caption, "parse_mode": "Markdown"})
+
+def get_trend_chart(symbol):
+    symbol = symbol.upper()
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=1mo"
+        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        data = res.json()
+        result = data["chart"].get("result")
+        if not result:
+            return None, f"❌ `{symbol}` niet gevonden."
+        meta = result[0]["meta"]
+        timestamps = result[0].get("timestamp", [])
+        closes = result[0]["indicators"]["quote"][0].get("close", [])
+        name = meta.get("shortName", symbol)
+        currency = meta.get("currency", "USD")
+
+        dates = [datetime.fromtimestamp(t) for t in timestamps]
+        prices = closes
+
+        positive = prices[-1] >= prices[0]
+        color = "#00e676" if positive else "#ff1744"
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+        fig.patch.set_facecolor("#1a1a2e")
+        ax.set_facecolor("#1a1a2e")
+        ax.plot(dates, prices, color=color, linewidth=2)
+        ax.fill_between(dates, prices, min(prices), alpha=0.15, color=color)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
+        ax.tick_params(colors="white", labelsize=8)
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#333")
+        ax.set_title(f"{name} ({symbol}) — 30 dagen", color="white", fontsize=12, pad=10)
+        ax.set_ylabel(currency, color="white", fontsize=9)
+        plt.tight_layout()
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png", facecolor=fig.get_facecolor())
+        buf.seek(0)
+        plt.close()
+
+        change = ((prices[-1] - prices[0]) / prices[0] * 100) if prices[0] else 0
+        sign = "+" if change >= 0 else ""
+        caption = f"📊 *{name} ({symbol})*\n💰 Nu: `{currency} {prices[-1]:,.2f}` | 30d: `{sign}{change:.2f}%`"
+        return buf.read(), caption
+    except Exception as e:
+        return None, f"❌ Fout bij grafiek: {e}"
+
+
+
 def get_crypto_price(symbol):
     symbol = symbol.upper()
     coin_id = CRYPTO_IDS.get(symbol)
@@ -160,9 +219,10 @@ def handle_message(message):
             "/coins — Beschikbare coins\n"
             "/aandeel TTWO — Live aandelenkoers\n"
             "/aandelen — Alle aandelen overzicht\n"
+            "/trend AAPL — 30d grafiek van aandeel\n"
             "/grapje — Vertel een grapje 😂\n"
             "/help — Dit menu\n\n"
-            "Voorbeeld: `/aandeel CRWV`"
+            "Voorbeeld: `/trend CRWV`"
         )
 
     elif text == "/help":
@@ -173,6 +233,7 @@ def handle_message(message):
             "/coins — Beschikbare coins\n"
             "/aandeel TTWO — Live aandelenkoers\n"
             "/aandelen — Alle aandelen overzicht\n"
+            "/trend AAPL — 30d grafiek van aandeel\n"
             "/grapje — Vertel een grapje 😂\n"
         )
 
@@ -200,6 +261,19 @@ def handle_message(message):
             symbol = parts[1].upper()
             reply = get_stock_price(symbol)
             send_message(chat_id, reply)
+
+    elif text.startswith("/trend"):
+        parts = text.split()
+        if len(parts) < 2:
+            send_message(chat_id, "❌ Gebruik: `/trend AAPL`")
+        else:
+            symbol = parts[1].upper()
+            send_message(chat_id, f"⏳ Grafiek laden voor `{symbol}`...")
+            img, caption = get_trend_chart(symbol)
+            if img:
+                send_photo(chat_id, img, caption)
+            else:
+                send_message(chat_id, caption)
 
     elif text.startswith("/prijs"):
         parts = text.split()
