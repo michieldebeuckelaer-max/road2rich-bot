@@ -18,25 +18,27 @@ GRAPJES = [
     "Hoe noem je een beer in de crypto-wereld?\n\nEen bear market... maar dan eentje die echt bijt! 🐻📉",
 ]
 
-STOCKS = ["ABCL", "SSLV.L", "TTWO", "CCJ", "CRWV"]
+MY_STOCKS = ["ABCL", "SSLV.L", "TTWO", "CCJ", "CRWV"]
 
 def get_stock_price(symbol):
     symbol = symbol.upper()
-    if symbol not in STOCKS:
-        return f"❌ Onbekend aandeel: `{symbol}`\nBeschikbaar: {', '.join(STOCKS)}"
     try:
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2d"
         res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
         data = res.json()
-        meta = data["chart"]["result"][0]["meta"]
+        result = data["chart"].get("result")
+        if not result:
+            return f"❌ Aandeel `{symbol}` niet gevonden. Controleer de ticker!"
+        meta = result[0]["meta"]
         price = meta.get("regularMarketPrice", 0)
         prev = meta.get("chartPreviousClose", price)
         change = ((price - prev) / prev * 100) if prev else 0
         currency = meta.get("currency", "USD")
+        name = meta.get("shortName", symbol)
         arrow = "📈" if change >= 0 else "📉"
         sign = "+" if change >= 0 else ""
         return (
-            f"{arrow} *{symbol}*\n"
+            f"{arrow} *{name} ({symbol})*\n"
             f"💰 Prijs: `{currency} {price:,.2f}`\n"
             f"📊 24h: `{sign}{change:.2f}%`\n"
             f"🏦 Markt: `{meta.get('exchangeName', '?')}`"
@@ -45,8 +47,8 @@ def get_stock_price(symbol):
         return f"❌ Fout bij ophalen van {symbol}: {e}"
 
 def get_all_stocks():
-    lines = ["📋 *Aandelen Overzicht*\n"]
-    for symbol in STOCKS:
+    lines = ["📋 *Mijn Aandelen*\n"]
+    for symbol in MY_STOCKS:
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2d"
             res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
