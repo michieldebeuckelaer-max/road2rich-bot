@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime
 
-BOT_TOKEN = "8901013849:AAGXWFh0HnYJgvryPa3kZLRH4uvg9sCmlHQ"
+BOT_TOKEN = "8901013849:AAHmtf5AyHtJksGq17RIFszjZOpsdNkM910"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 GRAPJES = [
