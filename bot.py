@@ -306,16 +306,8 @@ def handle_message(message):
             send_message(chat_id, reply)
 
     else:
-        antwoorden = [
-            "🤖 Ik ben een bot, geen mens... maar ik doe mijn best! Stuur /help voor wat ik kan.",
-            "💰 Focus op de bag! Stuur /market voor de laatste koersen.",
-            "📈 To the moon! Kan ik je ergens mee helpen? Stuur /help.",
-            "🚀 Road to Riches! Gebruik /prijs BTC of /trend AAPL voor info.",
-            "😂 Haha! Stuur /grapje als je een grapje wil.",
-            "💎 Diamond hands! Stuur /help voor alle commands.",
-            "🐶 Woof! Ik ben Richbot. Stuur /help om te zien wat ik kan.",
-        ]
-        send_message(chat_id, random.choice(antwoorden))
+        if text.startswith("/"):
+            send_message(chat_id, "❓ Onbekend commando. Stuur /help voor een overzicht.")
 
 def handle_callback(callback):
     query_id = callback["id"]
